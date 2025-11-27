@@ -40,18 +40,6 @@ sudo apt update
 sudo apt install bpfcc-tools python3-bpfcc linux-headers-$(uname -r)
 ```
 
-## 👤 Create Restricted User
-```bash
-sudo adduser restricted_user
-id -u restricted_user
-```
-
-## Note: Take note of the UID returned by the id command. You must update the TARGET_UID variable inside the script to match this number:
-
-```bash
-TARGET_UID = 1003
-```
-
 ## 🛠 Enable eBPF LSM in GRUB
 
 1. Open GRUB config:
@@ -70,6 +58,20 @@ GRUB_CMDLINE_LINUX_DEFAULT="quiet splash lsm=bpf"
 sudo update-grub
 
 sudo reboot
+```
+## 👤 Create Restricted User
+```bash
+sudo adduser restricted_user
+```
+
+```bash
+id -u restricted_user
+```
+
+## Note: Take note of the UID returned by the id command. You must update the TARGET_UID variable inside the script to match this number:
+
+```bash
+TARGET_UID = 1003
 ```
 
 ## ▶️ Run the LSM Program
