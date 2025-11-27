@@ -23,12 +23,12 @@ Check your config:
 ```bash
 cat /sys/kernel/security/lsm
 ```
-# Output must include 'bpf'
+#### Output must include 'bpf'
 
 ```bash
 grep CONFIG_BPF_LSM /boot/config-$(uname -r)
 ```
-# Output must be: CONFIG_BPF_LSM=y
+#### Output must be: CONFIG_BPF_LSM=y
 
 
 ## ✔ Install Dependencies
