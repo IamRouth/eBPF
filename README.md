@@ -1,103 +1,120 @@
-🔒 eBPF LSM File-Access Denylist for Specific User
+# 🔒 eBPF LSM File-Access Denylist for Specific User
 
-A lightweight Linux Security Module (LSM) using eBPF to restrict a specific user from opening specific files, enforced inside the kernel using the file_open LSM hook.
+A lightweight Linux Security Module (LSM) using eBPF to restrict a specific user from opening specific files, enforced inside the kernel using the `file_open` LSM hook.
 
 This project demonstrates how to attach an eBPF LSM probe that blocks opening certain filenames (denylist) only for a target UID.
 
-⚙️ Features
+## ⚙️ Features
 
-Deny file opening based on basename only
+* **Basename Filtering:** Deny file opening based on the filename (basename) only.
+* **Targeted Restriction:** Restriction applies only to one specific user UID.
+* **LSM Hook:** Implemented using the `file_open` Linux Security Module hook.
+* **Kernel Enforcement:** Logic runs in kernel space, not as a userspace interceptor.
+* **Live Logging:** Logs denied attempts via `bpf_trace_printk`.
 
-Restriction applies only to one specific user UID
+---
 
-Implemented using the LSM (Linux Security Module) eBPF hook
+## 📌 Requirements
 
-Kernel-level enforcement (not a userspace interceptor)
+### 1. Kernel Configuration
+You must have a Linux kernel (Version ≥ 5.7) with BPF LSM enabled.
 
-Logs denied attempts via bpf_trace_printk
-
-📌 Requirements
-✔ Kernel
-
-You must have a kernel with:
-
-CONFIG_BPF_LSM=y
-
-Version ≥ 5.7
-
-Check:
-
+Check your config:
+```bash
 cat /sys/kernel/security/lsm
+```
+# Output must include 'bpf'
+
+```bash
 grep CONFIG_BPF_LSM /boot/config-$(uname -r)
+```
+# Output must be: CONFIG_BPF_LSM=y
 
 
-bpf must appear in the LSM list.
+## ✔ Install Dependencies
 
-✔ Install Dependencies
+You must have the BPF Compiler Collection (BCC) tools and Linux headers installed.
+
+```bash
 sudo apt update
 sudo apt install bpfcc-tools python3-bpfcc linux-headers-$(uname -r)
+```
 
-👤 Create Restricted User
+## 👤 Create Restricted User
+```bash
 sudo adduser restricted_user
 id -u restricted_user
+```
 
+## Note: Take note of the UID returned by the id command. You must update the TARGET_UID variable inside the script to match this number:
 
-Use this UID inside the script:
-
+```bash
 TARGET_UID = 1003
+```
 
-🛠 Enable eBPF LSM in GRUB
+## 🛠 Enable eBPF LSM in GRUB
 
-Open GRUB config:
+1. Open GRUB config:
 
+```bash 
 sudo nano /etc/default/grub
+```
 
-
-Modify:
-
+2. Modify:
+```bash
 GRUB_CMDLINE_LINUX_DEFAULT="quiet splash lsm=bpf"
+```
 
-
-Update & reboot:
-
+3. Update & reboot:
+```bash 
 sudo update-grub
+
 sudo reboot
+```
 
-▶️ Run the LSM Program
-Terminal 1 (root)
+## ▶️ Run the LSM Program
+1. Terminal 1 (root)
+```bash
 sudo python3 lsm_deny.py
+```
 
-
-If successful, you will see:
-
+ If successful, you will see:
+ 
+```bash
 [+] SUCCESS: Denylist LSM Active!
 User <UID> can do everything EXCEPT forbidden files.
+```
 
-🧪 TESTING (IMPORTANT)
-Terminal 2
+2. 🧪 TESTING (IMPORTANT)
+   Terminal 2
 
-Switch to restricted user:
+  Switch to restricted user:
 
+```bash
 su restricted_user
+```
 
-
-Try accessing forbidden file:
-
+ Try accessing forbidden file:
+```bash
 cat secret.txt
+```
 
 
 Expected behavior:
-
+```bash
 ❌ Access denied
+```
 Terminal 1 will show:
-
+```bash
 [LSM] Denied access to forbidden file: secret.txt
+```
 
-🛑 Stopping the LSM Program
+3. 🛑 Stopping the LSM Program
 
 The LSM is detached automatically when you press:
-
+```bash
 Ctrl + C
+```
 
 
 If the first terminal is stopped, the restrictions stop immediately.
@@ -106,52 +123,13 @@ If the first terminal is stopped, the restrictions stop immediately.
 
 Inside the script:
 
+```bash
 FORBIDDEN_FILES = [
     b"secret.txt",
     b"main.py",
 ]
+```
 
 
 Add/remove filenames (basename only).
 
-🧠 How It Works
-🔹 eBPF Program (C)
-
-Hooks into file_open LSM path
-
-Checks UID
-
-Extracts the basename of file (dentry->d_name.name)
-
-Looks up in eBPF hash map (denylist)
-
-Returns -EPERM if matched
-
-🔹 Python Loader
-
-Loads & compiles the eBPF C code
-
-Populates denylist map
-
-Attaches to LSM hook using bpf_attach_lsm
-
-Prints trace logs in real time
-
-🪪 Security Notes
-❗ This does not persist across reboots
-
-You must run the script again after reboot.
-
-❗ If the root terminal running the script stops
-
-Restrictions disappear immediately.
-
-✔ Safe for experimentation
-
-Nothing is permanently altered in your kernel.
-
-📄 Full Source Code
-
-The complete script is included in this repository:
-
-lsm_deny.py
