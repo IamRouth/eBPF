@@ -35,8 +35,11 @@ struct key_t {
 // Hash map to store 'Forbidden' filenames (denylist)
 BPF_HASH(denylist, struct key_t, u8, 256);
 
-// LSM hook: file_open
-LSM_PROBE(file_open, struct file *file) {
+#include <linux/binfmts.h>
+
+// LSM hook: bprm_check_security
+// This hook is called when a program is about to be executed.
+LSM_PROBE(bprm_check_security, struct linux_binprm *bprm) {
     u32 uid = bpf_get_current_uid_gid();
 
     // Only restrict the target UID
@@ -45,7 +48,7 @@ LSM_PROBE(file_open, struct file *file) {
     }
 
     // Get filename basename from dentry
-    struct dentry *dentry = file->f_path.dentry;
+    struct dentry *dentry = bprm->file->f_path.dentry;
     struct key_t key = {};
     bpf_probe_read_kernel_str(&key.name, sizeof(key.name), dentry->d_name.name);
 
@@ -94,10 +97,10 @@ def main():
         print(f"    - Forbidden: {safe_name.decode('utf-8')}")
 
     # 3. Attach the LSM Hook
-    print("[*] Attaching LSM Hook to 'file_open'...")
+    print("[*] Attaching LSM Hook to 'bprm_check_security'...")
     try:
-        # BCC names the LSM program as lsm__file_open for LSM_PROBE(file_open, ...)
-        func = b.load_func("lsm__file_open", BPF.LSM)
+        # BCC names the LSM program as lsm__bprm_check_security for LSM_PROBE(bprm_check_security, ...)
+        func = b.load_func("lsm__bprm_check_security", BPF.LSM)
         libbcc.lib.bpf_attach_lsm(func.fd)
     except Exception as e:
         print("[-] Attachment Failed!")
